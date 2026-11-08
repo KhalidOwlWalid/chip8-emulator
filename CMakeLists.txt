@@ -4,7 +4,33 @@ project(chip8_emulator
     LANGUAGES CXX
 )
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 option(BUILD_TESTS "Build tests" ON)
+
+# ---- spdlog (git submodule) ----
+# After cloning: git submodule update --init --recursive
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/submodules/spdlog/CMakeLists.txt")
+    message(FATAL_ERROR "spdlog submodule missing. Run: git submodule update --init --recursive")
+endif()
+add_subdirectory(submodules/spdlog)
+
+# Logger wrapper (utils/logger.hpp) as one target to link against.
+# Compile-time floor: LOG_TRACE/LOG_DEBUG are compiled out in Release builds.
+add_library(chip8_logger INTERFACE)
+target_include_directories(chip8_logger INTERFACE "${CMAKE_SOURCE_DIR}/utils")
+target_link_libraries(chip8_logger INTERFACE spdlog::spdlog)
+target_compile_definitions(chip8_logger INTERFACE
+    $<IF:$<CONFIG:Release>,SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO,SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
+)
+
+# ---- Emulator core library ----
+# Everything in src/ goes here; main and the unit tests both link to it,
+# so whatever you write in the library is testable straight away.
+add_library(chip8 STATIC src/chip8.cpp)
+target_include_directories(chip8 PUBLIC "${CMAKE_SOURCE_DIR}/include")
+target_link_libraries(chip8 PUBLIC chip8_logger)
 
 if(BUILD_TESTS)
     execute_process(
@@ -33,14 +59,15 @@ if(BUILD_TESTS)
     # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
+    enable_testing()  # lets `ctest` run from the build root
     add_subdirectory(tests)
 endif(BUILD_TESTS)
 
+add_subdirectory(playground)
+
 add_executable(main main.cpp)
 
-target_include_directories(main PUBLIC
-    "${CMAKE_SOURCE_DIR}/utils/logger.hpp"
-)
+target_link_libraries(main PRIVATE chip8)
 
 # Use of install to ensure system wide proper installation
 # https://stackoverflow.com/a/74313654
