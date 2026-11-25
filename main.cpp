@@ -23,4 +23,7 @@ int main(int argc, char* argv[]){
         LOG_DEBUG("Chip8 ROM has been loaded");
     }
 
+    chip8.fetch();
+    chip8.fetch();
+
 }

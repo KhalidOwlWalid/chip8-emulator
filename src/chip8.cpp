@@ -15,14 +15,11 @@ Chip8::Chip8(const std::filesystem::path rom_path) {
 
         // TODO: Check the size of the loaded rom if it exceeds the expected size
         // If it does, this will cause an overflow
-        LOG_DEBUG("Opening file: {} | Size: {} bytes", rom_path.string(), rom_buf.size());
-
         std::copy(rom_buf.begin(), rom_buf.end(), _memory.begin() + _rom_start_address);
 
         LOG_INFO("Opening file: {} | Size: {} bytes", rom_path.string(), _memory.size());
         LOG_INFO("dump: {:X}", spdlog::to_hex(_memory.begin(), _memory.end(), 1));
         _rom_loaded = true;
-
     }
 }
 
@@ -47,10 +44,20 @@ bool Chip8::has_rom_loaded() {
     return _rom_loaded;
 }
 
-void Chip8::fetch(const std::vector<uint8_t>& bytes) {
+void Chip8::fetch() {
     // Read the current instruction that PC is CURRENTLY pointing at from memory
     // PC incremented by 2, reminder that PC is the address of the instructions
     // Basically, 0x202: 00EE
+
+    std::uint8_t hi = _memory[_pc];
+    std::uint8_t lo = _memory[_pc + 1];
+
+    std::uint16_t instruction = static_cast<std::uint16_t>((hi << 8 | lo));
+
+    LOG_INFO("Current instruction: {:x}", instruction);
+
+    _pc += 2;
+
 }
 
 void Chip8::decode() {
