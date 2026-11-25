@@ -2,6 +2,7 @@
 add_executable(test_main
   unit/main.cpp
   unit/test_instructions.cpp
+  example/test_example.cpp
 )
 
 target_link_libraries(test_main
