@@ -3,6 +3,8 @@
 #include <filesystem>
 #include "chip8.hpp"
 
+using namespace chip8;
+
 int main(int argc, char* argv[]){
     logger::init(spdlog::level::debug);
     LOG_INFO("chip8 emulator starting");
@@ -21,8 +23,8 @@ int main(int argc, char* argv[]){
     // chip8.disassemble();
 
     for (int i = 0; i < 20; i++) {
-        chip8.fetch_instruction();
-        chip8.decode_and_execute();
+        chip8.fetch();
+        chip8.decode();
     }
 
     // while (true) {

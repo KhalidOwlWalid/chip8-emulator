@@ -1,5 +1,7 @@
 #include "../include/chip8.hpp"
 
+using namespace chip8;
+
 Chip8::Chip8(const std::filesystem::path rom_path) {
     LOG_INFO("Chip8 interpretor initialized.");
 
@@ -49,7 +51,7 @@ void Chip8::disassemble() {
     LOG_INFO("dump: {:X}", spdlog::to_hex(_memory.begin(), _memory.end(), 2));
 }
 
-void Chip8::fetch_instruction() {
+void Chip8::fetch() {
     // Read the current instruction that PC is CURRENTLY pointing at from memory
     // PC incremented by 2, reminder that PC is the address of the instructions
     // Basically, 0x202: 00EE
@@ -65,19 +67,55 @@ void Chip8::print_bytes(const T& bytes) {
     LOG_DEBUG("Bytes debug: {:X}", bytes);
 }
 
-void Chip8::decode_and_execute(const std::uint16_t& instruction_bytes) {
-    // Decode the current instruction
-
-    // The first nibble will tell us what kind of instruction it is
-    // The rest of the nibble (up to 12 bit), depends on the instruction nibble since there
-    // are various options
-    std::uint8_t instruction_nibble = instruction_bytes >> 12;
-    std::uint16_t rest_of_nibble = instruction_bytes & 0xFFF;
-
-    LOG_DEBUG("Instruction: {:X}, nibble: {:X}, rest of nibble: {:X}", instruction_bytes, instruction_nibble, rest_of_nibble);
-
+void Chip8::decode() {
+    _decoded_instruction = chip8::parse(_curr_instruction);
 }
 
-void Chip8::decode_and_execute() {
-    decode_and_execute(_curr_instruction);
+void Chip8::execute() {
+    // std::uint8_t instruction_nibble = instruction_bytes >> 12;
+    // std::uint16_t rest_of_nibble = instruction_bytes & 0xFFF;
+    // LOG_DEBUG("Instruction: {:X}, nibble: {:X}, rest of nibble: {:X}", instruction_bytes, instruction_nibble, rest_of_nibble);
+
+    switch (_decoded_instruction.first_nibble) {
+
+        case 0:
+            LOG_DEBUG("Clear or return?");
+            break;
+
+        // Program jumps immediately to NNN without PC incrementing
+        case 1:
+            _pc = _decoded_instruction.NNN;
+            break;
+
+        // TODO: Push current PC to stack, and then jump to NNN
+        // When subroutine reached 00EE, it returns by popping the last address from the stack and setting the PC to it
+        // If multiple subroutines called, then this will recursively undo itself until it reached the first address pushed into the stack
+        case 2:
+            break;
+
+        // If VX != NN then
+        case 3:
+            break;
+
+        // If VX == NN then
+        case 4:
+            break;
+
+        // If VX != VY then
+        case 5:
+            break;
+
+        // TODO (6XNN): Set register X with NN
+        case 6:
+            break;
+
+        // TODO (7XNN): Add value NN to X
+        case 7:
+            break;
+
+        default:
+            break;
+
+    }
+
 }

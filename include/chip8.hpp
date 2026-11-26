@@ -15,28 +15,56 @@
  * Copied from https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
 */
 
-class Chip8 {
+namespace chip8 {
 
-public:
-    Chip8(const std::filesystem::path rom_path);
-    ~Chip8() = default;
+    struct DecodedInstruction {
+        std::uint16_t raw_instruction; // 16 bit
+        std::uint8_t first_nibble; // 4 bit
+        std::uint8_t X; // 4 bit
+        std::uint8_t Y; // 4 bit
+        std::uint8_t N; // 4 bit
+        std::uint8_t NN; // 8 bit
+        std::uint16_t NNN; // 12 bit
+    };
 
-    void fetch_instruction();
-    void decode_and_execute();
-    void decode_and_execute(const std::uint16_t& instruction_bytes);
-    bool has_rom_loaded();
-    void disassemble();
+    constexpr DecodedInstruction parse(const std::uint16_t word) {
+        return DecodedInstruction{
+            .raw_instruction = static_cast<std::uint16_t>(word),
+            .first_nibble = static_cast<std::uint8_t>((word & 0xF000) >> 12),
+            .X = static_cast<std::uint8_t>((word & 0x0F00) >> 8),
+            .Y = static_cast<std::uint8_t>((word & 0x00F0) >> 4),
+            .N = static_cast<std::uint8_t>((word & 0x000F)),
+            .NN = static_cast<std::uint8_t>((word & 0x00FF)),
+            .NNN = static_cast<std::uint16_t>((word & 0x0FFF))
+        };
+    }
 
-    template<typename T>
-    void print_bytes(const T& bytes);
+    class Chip8 {
 
-private:
-    std::filesystem::path _rom_file_path;
-    bool _rom_loaded = false;
-    std::array<uint8_t, 4096> _memory{};
-    std::size_t _rom_start_address = 0x200;
-    std::uint16_t _pc = _rom_start_address;
-    std::uint16_t _curr_instruction;
+    public:
+        Chip8(const std::filesystem::path rom_path);
+        ~Chip8() = default;
 
-    std::vector<uint8_t> load_rom(const std::filesystem::path& p);
-};
+        void fetch();
+        void decode();
+        void execute();
+        void decode_and_execute(const std::uint16_t& instruction_bytes);
+        bool has_rom_loaded();
+        void disassemble();
+
+        template<typename T>
+        void print_bytes(const T& bytes);
+
+    private:
+        std::filesystem::path _rom_file_path;
+        bool _rom_loaded = false;
+        std::array<uint8_t, 4096> _memory{};
+        std::size_t _rom_start_address = 0x200;
+        std::uint16_t _pc = _rom_start_address;
+        std::uint16_t _curr_instruction;
+        DecodedInstruction _decoded_instruction;
+
+        std::vector<uint8_t> load_rom(const std::filesystem::path& p);
+    };
+
+}
