@@ -1,15 +1,7 @@
 #include "logger.hpp"
 
 #include <filesystem>
-#include <fstream>
-#include <vector>
-#include <cstdint>
-
 #include "chip8.hpp"
-
-#include <array>
-
-#include <iostream>
 
 int main(int argc, char* argv[]){
     logger::init(spdlog::level::debug);
@@ -21,9 +13,20 @@ int main(int argc, char* argv[]){
 
     if (chip8.has_rom_loaded()) {
         LOG_DEBUG("Chip8 ROM has been loaded");
+    } else {
+        LOG_ERROR("ROM failed to be loaded");
+        return 0;
     }
 
-    chip8.fetch();
-    chip8.fetch();
+    // chip8.disassemble();
 
+    for (int i = 0; i < 20; i++) {
+        chip8.fetch_instruction();
+        chip8.decode_and_execute();
+    }
+
+    // while (true) {
+    //     chip8.fetch();
+    //     chip8.decode_and_execute();
+    // }
 }

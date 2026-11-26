@@ -11,19 +11,18 @@ Chip8::Chip8(const std::filesystem::path rom_path) {
         _rom_loaded = false;
     } else {
         // ROM is parsed from the .ch8 file
-        std::vector<std::uint8_t> rom_buf = load_rom(rom_path);
+        _rom_file_path = rom_path;
+        std::vector<std::uint8_t> rom_buf = load_rom(_rom_file_path);
 
         // TODO: Check the size of the loaded rom if it exceeds the expected size
         // If it does, this will cause an overflow
         std::copy(rom_buf.begin(), rom_buf.end(), _memory.begin() + _rom_start_address);
 
-        LOG_INFO("Opening file: {} | Size: {} bytes", rom_path.string(), _memory.size());
-        LOG_INFO("dump: {:X}", spdlog::to_hex(_memory.begin(), _memory.end(), 1));
+        LOG_INFO("Opening file: {} | Size: {} bytes", _rom_file_path.string(), _memory.size());
         _rom_loaded = true;
     }
 }
 
-// TODO: Change this to a reasonable array size, that matches the maximum ROM size
 std::vector<std::uint8_t> Chip8::load_rom(const std::filesystem::path& p) {
     std::ifstream in(p, std::ios::binary);
     if (!in) {
@@ -44,30 +43,41 @@ bool Chip8::has_rom_loaded() {
     return _rom_loaded;
 }
 
-void Chip8::fetch() {
+void Chip8::disassemble() {
+    // print out the loaded ROM in a readable fashion
+    LOG_INFO("Loaded file: {}", _rom_file_path.string());
+    LOG_INFO("dump: {:X}", spdlog::to_hex(_memory.begin(), _memory.end(), 2));
+}
+
+void Chip8::fetch_instruction() {
     // Read the current instruction that PC is CURRENTLY pointing at from memory
     // PC incremented by 2, reminder that PC is the address of the instructions
     // Basically, 0x202: 00EE
-
     std::uint8_t hi = _memory[_pc];
     std::uint8_t lo = _memory[_pc + 1];
-
-    std::uint16_t instruction = static_cast<std::uint16_t>((hi << 8 | lo));
-
-    LOG_INFO("Current instruction: {:x}", instruction);
-
     _pc += 2;
 
+    _curr_instruction = static_cast<std::uint16_t>((hi << 8 | lo));
 }
 
-void Chip8::decode() {
+template <typename T>
+void Chip8::print_bytes(const T& bytes) {
+    LOG_DEBUG("Bytes debug: {:X}", bytes);
+}
+
+void Chip8::decode_and_execute(const std::uint16_t& instruction_bytes) {
+    // Decode the current instruction
+
+    // The first nibble will tell us what kind of instruction it is
+    // The rest of the nibble (up to 12 bit), depends on the instruction nibble since there
+    // are various options
+    std::uint8_t instruction_nibble = instruction_bytes >> 12;
+    std::uint16_t rest_of_nibble = instruction_bytes & 0xFFF;
+
+    LOG_DEBUG("Instruction: {:X}, nibble: {:X}, rest of nibble: {:X}", instruction_bytes, instruction_nibble, rest_of_nibble);
 
 }
 
-void Chip8::execute() {
-
-}
-
-void Chip8::output() {
-    LOG_DEBUG("{:x}", _pc);
+void Chip8::decode_and_execute() {
+    decode_and_execute(_curr_instruction);
 }
