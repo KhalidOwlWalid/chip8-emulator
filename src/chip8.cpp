@@ -85,33 +85,123 @@ void Chip8::execute() {
         // Program jumps immediately to NNN without PC incrementing
         case 1:
             _pc = _decoded_instruction.NNN;
+            LOG_DEBUG("PC: {:X}", _pc);
             break;
 
         // TODO: Push current PC to stack, and then jump to NNN
         // When subroutine reached 00EE, it returns by popping the last address from the stack and setting the PC to it
         // If multiple subroutines called, then this will recursively undo itself until it reached the first address pushed into the stack
         case 2:
+            _stack[_stack_count] = _pc;
+            _stack_count++;
+            _pc = _decoded_instruction.NNN;
+            LOG_DEBUG("Stack count: {}, Stack address: {:X}", _stack_count, spdlog::to_hex(_stack.begin(), _stack.end(), 2));
             break;
 
-        // If VX != NN then
+        // If VX == NN then skip one instruction
         case 3:
+            if (_register[_decoded_instruction.VX] == _decoded_instruction.NN) {
+                LOG_DEBUG("Instruction skipped because V{:X} == NN({})", _decoded_instruction.VX, _decoded_instruction.NN);
+                _pc += 2;
+            }
             break;
 
-        // If VX == NN then
+        // If VX != NN then skip one instruction
         case 4:
+            LOG_DEBUG("Instruction skipped because V{:X} != NN({})", _decoded_instruction.VX, _decoded_instruction.NN);
+            if (_register[_decoded_instruction.VX] != _decoded_instruction.NN) {
+                _pc += 2;
+            }
             break;
 
-        // If VX != VY then
+        // If VX == VY then skip one instruction
         case 5:
+            LOG_DEBUG("Instruction skipped because V{:X} == V{:X}", _decoded_instruction.VX, _decoded_instruction.VY);
+            if (_register[_decoded_instruction.VX] == _register[_decoded_instruction.VY]) {
+                _pc += 2;
+            }
             break;
 
-        // TODO (6XNN): Set register X with NN
+        // If VX != VY then skip one instruction
+        case 9:
+            LOG_DEBUG("Instruction skipped because V{:X} != V{:X}", _decoded_instruction.VX, _decoded_instruction.VY);
+            if (_register[_decoded_instruction.VX] != _register[_decoded_instruction.VY]) {
+                _pc += 2;
+            }
+
+        // (6XNN): Set register X with NN
         case 6:
+            LOG_DEBUG("Register V{:X} set with {}", _decoded_instruction.VX, _decoded_instruction.NN);
+            _register[_decoded_instruction.VX] = _decoded_instruction.NN;
             break;
 
-        // TODO (7XNN): Add value NN to X
+        // (7XNN): Add value NN to X
+        // Does not set the carry flag at VF. Overflow is basically ignored.
         case 7:
+            LOG_DEBUG("V{:X} += {}", _decoded_instruction.VX, _decoded_instruction.NN);
+            _register[_decoded_instruction.VX] += _decoded_instruction.NN;
             break;
+
+        case 8:
+
+            switch (_decoded_instruction.N) {
+
+                case 0:
+                    LOG_DEBUG("V{:X} set to V{:X}", _register[_decoded_instruction.VX], _register[_decoded_instruction.VY]);
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VY];
+                    break;
+
+                case 1:
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VX] | _register[_decoded_instruction.VY];
+                    break;
+
+                case 2:
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VX] & _register[_decoded_instruction.VY];
+                    break;
+
+                case 3:
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VX] ^ _register[_decoded_instruction.VY];
+                    break;
+
+                case 4:
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VX] + _register[_decoded_instruction.VY];
+
+                    if (_register[_decoded_instruction.VX] == 0xFF) {
+                        // Raise the carry flag if the 2 registers addition overflows
+                        _register[0xF] = 0x1;
+                    } else {
+                        _register[0xF] = 0;
+                    }
+                    break;
+
+                case 5:
+                    // This subtraction will also affect the carry flag, but note that it’s opposite from what you might think.
+                    // If the minuend (the first operand) is larger than or equal to the subtrahend (second operand), VF will be set to 1.
+                    // If the subtrahend is larger, and we “underflow” the result, VF is set to 0.
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VX] - _register[_decoded_instruction.VY];
+                    if (_register[_decoded_instruction.VX] >= _register[_decoded_instruction.VY]) {
+                        _register[0xF] = 1;
+                    }
+                    break;
+
+                case 6:
+                    LOG_WARN("8XY6 not implemented");
+                    break;
+
+                case 7:
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VY] - _register[_decoded_instruction.VX];
+                    if (_register[_decoded_instruction.VY] >= _register[_decoded_instruction.VX]) {
+                        _register[0xF] = 1;
+                    }
+                    break;
+
+                case 0xE:
+                    LOG_WARN("8XYE not implemented");
+                    break;
+
+                default:
+                    break;
+            }
 
         default:
             break;

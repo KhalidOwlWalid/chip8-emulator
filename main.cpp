@@ -22,13 +22,10 @@ int main(int argc, char* argv[]){
 
     // chip8.disassemble();
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 50; i++) {
         chip8.fetch();
         chip8.decode();
+        chip8.execute();
     }
 
-    // while (true) {
-    //     chip8.fetch();
-    //     chip8.decode_and_execute();
-    // }
 }

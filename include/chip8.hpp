@@ -20,8 +20,8 @@ namespace chip8 {
     struct DecodedInstruction {
         std::uint16_t raw_instruction; // 16 bit
         std::uint8_t first_nibble; // 4 bit
-        std::uint8_t X; // 4 bit
-        std::uint8_t Y; // 4 bit
+        std::uint8_t VX; // 4 bit
+        std::uint8_t VY; // 4 bit
         std::uint8_t N; // 4 bit
         std::uint8_t NN; // 8 bit
         std::uint16_t NNN; // 12 bit
@@ -31,8 +31,8 @@ namespace chip8 {
         return DecodedInstruction{
             .raw_instruction = static_cast<std::uint16_t>(word),
             .first_nibble = static_cast<std::uint8_t>((word & 0xF000) >> 12),
-            .X = static_cast<std::uint8_t>((word & 0x0F00) >> 8),
-            .Y = static_cast<std::uint8_t>((word & 0x00F0) >> 4),
+            .VX = static_cast<std::uint8_t>((word & 0x0F00) >> 8),
+            .VY = static_cast<std::uint8_t>((word & 0x00F0) >> 4),
             .N = static_cast<std::uint8_t>((word & 0x000F)),
             .NN = static_cast<std::uint8_t>((word & 0x00FF)),
             .NNN = static_cast<std::uint16_t>((word & 0x0FFF))
@@ -48,7 +48,6 @@ namespace chip8 {
         void fetch();
         void decode();
         void execute();
-        void decode_and_execute(const std::uint16_t& instruction_bytes);
         bool has_rom_loaded();
         void disassemble();
 
@@ -58,11 +57,17 @@ namespace chip8 {
     private:
         std::filesystem::path _rom_file_path;
         bool _rom_loaded = false;
-        std::array<uint8_t, 4096> _memory{};
+        std::uint8_t _stack_count = 0;
         std::size_t _rom_start_address = 0x200;
         std::uint16_t _pc = _rom_start_address;
         std::uint16_t _curr_instruction;
         DecodedInstruction _decoded_instruction;
+
+        std::array<uint8_t, 4096> _memory{};
+        // The stack is only used to store return addresses when subroutines are called. The original RCA 1802 version allocated 48 bytes for up to 12 levels of nesting;
+        // https://en.wikipedia.org/wiki/CHIP-8
+        std::array<uint16_t, 24> _stack{};
+        std::array<uint8_t, 16> _register{};
 
         std::vector<uint8_t> load_rom(const std::filesystem::path& p);
     };
