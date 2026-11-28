@@ -60,6 +60,7 @@ namespace chip8 {
         std::uint8_t _stack_count = 0;
         std::size_t _rom_start_address = 0x200;
         std::uint16_t _pc = _rom_start_address;
+        std::uint16_t _idx_reg = 0;
         std::uint16_t _curr_instruction;
         DecodedInstruction _decoded_instruction;
 

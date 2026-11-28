@@ -185,7 +185,11 @@ void Chip8::execute() {
                     break;
 
                 case 6:
-                    LOG_WARN("8XY6 not implemented");
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VY];
+                    // Get the LSB from the value in register X and store it in VF
+                    _register[0xF] = (_register[_decoded_instruction.VX] & 0x1);
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VX] >> 1;
+                    LOG_DEBUG("8XY6 instruction: Shifted right by 1 bit (<<) -> {:X} to {:X}", _register[_decoded_instruction.VY], _register[_decoded_instruction.VX]);
                     break;
 
                 case 7:
@@ -196,12 +200,39 @@ void Chip8::execute() {
                     break;
 
                 case 0xE:
-                    LOG_WARN("8XYE not implemented");
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VY];
+                    // Get the MSB bit from the value in register X and store it in VF
+                    _register[0xF] = (_register[_decoded_instruction.VX] & 0x80);
+                    _register[_decoded_instruction.VX] = _register[_decoded_instruction.VX] << 1;
+                    LOG_DEBUG("8XYE instruction: Shifted left by 1 bit (<<) -> {:X} to {:X}", _register[_decoded_instruction.VY], _register[_decoded_instruction.VX]);
                     break;
 
                 default:
                     break;
             }
+
+        case 0xA:
+            _idx_reg = _decoded_instruction.NNN;
+            break;
+
+        case 0xB:
+            // WARNING: Ambiguous instruction. Different game .ch8 will either use the legacy chip8, chip-48 or super-chip
+            // This may cause different interpretation behaviour. Hence, we should handle all implementation, and let the
+            // user be able to configure which version they are using.
+            LOG_WARN("BNNN not implemented");
+            break;
+
+        // TODO: (CXNN) generates a random number, binary ANDs it with the value in NN and put the result in VX
+        case 0xC:
+            LOG_WARN("CXNN not implemented");
+            break;
+
+        // TODO (DXYN) draws N pixel tall sprite at the horizontal X coordinate in VX and Y coordinate in VY
+        // All pixels that are ON in the sprite will flip the pixel that is drawn on the screen. Any pixel turned OFF by this,
+        // VF register gets set to 1. Otherwise, set to 0.
+        case 0xD:
+            LOG_WARN("DXYN not implemented");
+            break;
 
         default:
             break;
